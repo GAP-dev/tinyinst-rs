@@ -12,6 +12,7 @@ categories = ["development-tools::testing", "os", "no-std"]
 
 [dependencies]
 cxx = { version = "1.0", default-features = false, features = ["alloc"] }
+cxxbridge-macro = "1.0.143"
 
 [build-dependencies]
 cmake = "0.1"
