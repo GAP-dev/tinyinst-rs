@@ -4,9 +4,9 @@ use cmake::Config;
 use git2::{Oid, Repository};
 use which::which;
 
-const TINYINST_URL: &str = "https://github.com/googleprojectzero/TinyInst.git";
+const TINYINST_URL: &str = "https://github.com/GAP-dev/TinyInst.git";
 const TINYINST_DIRNAME: &str = "Tinyinst";
-const TINYINST_REVISION: &str = "fb1cceb7ec3c44cb18c4c01685e496777e0bcdc9";
+const TINYINST_REVISION: &str = "56a19cfbb45f3c356e02c053e1a881cbff01f9bd";
 
 fn build_dep_check(tools: &[&str]) -> bool {
     for tool in tools {
