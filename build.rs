@@ -6,8 +6,8 @@ use which::which;
 
 const TINYINST_URL: &str = "https://github.com/GAP-dev/TinyInst.git";
 const TINYINST_DIRNAME: &str = "Tinyinst";
-const TINYINST_REVISION: &str = "56a19cfbb45f3c356e02c053e1a881cbff01f9bd";
-
+const TINYINST_REVISION: &str = "4277dec686feddd9ffa10948d872a42943874e9a";
+//const TINYINST_REVISION: &str = "fb1cceb7ec3c44cb18c4c01685e496777e0bcdc9";
 fn build_dep_check(tools: &[&str]) -> bool {
     for tool in tools {
         let found = which(tool);
