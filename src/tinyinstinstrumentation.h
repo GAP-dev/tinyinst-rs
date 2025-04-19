@@ -18,8 +18,8 @@ limitations under the License.
 
 #include <inttypes.h>
 #include <string>
+#include <memory>
 #include "instrumentation.h"
-#include "cxx.h"
 
 class TinyInstInstrumentation : public Instrumentation
 {
@@ -43,6 +43,12 @@ public:
   uint64_t GetReturnValue() override;
 
   std::string GetCrashName() override;
+  std::string GetCrashNameValue();
+  std::unique_ptr<std::string> GetCrashNameOwned();
+  std::unique_ptr<std::string> GetCrashNameValueOwned();
+
+private:
+  std::string crash_name_;
 
 protected:
   AFLCov *instrumentation;

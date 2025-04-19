@@ -3,6 +3,7 @@ use core::{
     ffi::c_char,
     fmt::{self, Debug, Formatter},
 };
+use cxx::UniquePtr;
 #[cxx::bridge]
 pub mod common {
     // C++ types and signatures exposed to Rust.
@@ -31,6 +32,7 @@ pub mod litecov {
         include!("shim.h");
         include!("tinyinstinstrumentation.h");
         include!("aflcov.h");
+        include!("string");
 
         type ModuleCovData;
         pub fn ClearInstrumentationData(self: Pin<&mut ModuleCovData>);
@@ -52,6 +54,13 @@ pub mod litecov {
         type TinyInstInstrumentation;
         #[must_use]
         pub fn tinyinstinstrumentation_new() -> UniquePtr<TinyInstInstrumentation>;
+
+        #[must_use]
+        pub fn GetCrashNameOwned(self: Pin<&mut TinyInstInstrumentation>) -> UniquePtr<CxxString>;
+        #[must_use]
+        pub fn GetCrashNameValueOwned(
+            self: Pin<&mut TinyInstInstrumentation>,
+        ) -> UniquePtr<CxxString>;
 
         type RunResult;
         // type Coverage;
@@ -102,11 +111,35 @@ pub mod litecov {
     }
 }
 
-use cxx::UniquePtr;
-impl litecov::TinyInstInstrumentation {
-    #[must_use]
-    pub fn new() -> UniquePtr<litecov::TinyInstInstrumentation> {
+/// `UniquePtr<TinyInstInstrumentation>` 에 확장 메서드를 정의하는 트레잇
+pub trait TinyInstInstrumentationExt {
+    /// C++ 생성자 래핑
+    fn new_tinyinst() -> UniquePtr<litecov::TinyInstInstrumentation>;
+    /// GetCrashNameOwned() → Rust String
+    fn get_crash_name(&mut self) -> String;
+    /// GetCrashNameValueOwned() → Rust String
+    fn get_crash_name_value(&mut self) -> String;
+}
+
+impl TinyInstInstrumentationExt for UniquePtr<litecov::TinyInstInstrumentation> {
+    fn new_tinyinst() -> Self {
         litecov::tinyinstinstrumentation_new()
+    }
+
+    fn get_crash_name(&mut self) -> String {
+        let uptr = self.pin_mut().GetCrashNameOwned();
+        uptr
+            .as_ref()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    }
+
+    fn get_crash_name_value(&mut self) -> String {
+        let uptr = self.pin_mut().GetCrashNameValueOwned();
+        uptr
+            .as_ref()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default()
     }
 }
 
@@ -144,7 +177,7 @@ impl TinyInst {
         if !Path::new(format!("{}", program_args[0]).as_str()).exists() {
             panic!("{} does not exist", program_args[0]);
         }*/
-        let mut tinyinst_ptr = litecov::TinyInstInstrumentation::new();
+        let mut tinyinst_ptr = litecov::tinyinstinstrumentation_new();
 
         let tinyinst_args_cstr: Vec<CString> = tinyinst_args
             .iter()
@@ -219,6 +252,13 @@ impl TinyInst {
         self.tinyinst_ptr
             .pin_mut()
             .IgnoreCoverage(self.coverage_ptr.pin_mut());
+    }
+
+    /// C++ 쪽에서 만든 crash name 을 가져옵니다.
+    /// 빈 문자열이면 None, 아니면 Some(name).
+    pub unsafe fn get_crash_name(&mut self) -> Option<String> {
+        let name = self.tinyinst_ptr.get_crash_name();
+        if name.is_empty() { None } else { Some(name) }
     }
 }
 

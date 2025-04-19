@@ -18,6 +18,7 @@ limitations under the License.
 
 #include "common.h"
 #include "tinyinstinstrumentation.h"
+#include "cxx.h"
 
 #include <sstream>
 
@@ -189,30 +190,38 @@ TinyInstInstrumentation::~TinyInstInstrumentation()
   delete instrumentation;
 }
 
-std::string TinyInstInstrumentation::GetCrashName()
-{
+std::string TinyInstInstrumentation::GetCrashNameValue() {
+  // 내부에서 crash_name_를 세팅하기 위해 non-const GetCrashName 호출
+  (void)GetCrashName();
+  return crash_name_;
+}
+
+std::string TinyInstInstrumentation::GetCrashName() {
   LiteCov::Exception exception = instrumentation->GetLastException();
   std::stringstream stream;
-  switch (exception.type)
-  {
-  case LiteCov::ExceptionType::ACCESS_VIOLATION:
-    stream << "access_violation";
-    break;
-  case LiteCov::ExceptionType::ILLEGAL_INSTRUCTION:
-    stream << "illegal_instruction";
-    break;
-  case LiteCov::ExceptionType::STACK_OVERFLOW:
-    stream << "stack_overflow";
-    break;
-  default:
-    stream << "other";
-    break;
+  switch (exception.type) {
+    case LiteCov::ExceptionType::ACCESS_VIOLATION:
+      stream << "access_violation"; break;
+    case LiteCov::ExceptionType::ILLEGAL_INSTRUCTION:
+      stream << "illegal_instruction"; break;
+    case LiteCov::ExceptionType::STACK_OVERFLOW:
+      stream << "stack_overflow"; break;
+    default:
+      stream << "other"; break;
   }
-  stream << "_";
-  stream << AnonymizeAddress(exception.ip);
-  stream << "_";
-  stream << AnonymizeAddress(exception.access_address);
-  return stream.str();
+  stream << "_" << AnonymizeAddress(exception.ip)
+         << "_" << AnonymizeAddress(exception.access_address);
+  crash_name_ = stream.str();
+  return crash_name_;
+}
+
+std::unique_ptr<std::string> TinyInstInstrumentation::GetCrashNameOwned() {
+  // 기존 GetCrashName() 호출 → std::string 반환 → move 해서 unique_ptr 로 래핑
+  return std::make_unique<std::string>( GetCrashName() );
+}
+
+std::unique_ptr<std::string> TinyInstInstrumentation::GetCrashNameValueOwned() {
+  return std::make_unique<std::string>( GetCrashNameValue() );
 }
 
 uint64_t TinyInstInstrumentation::GetReturnValue()
